@@ -124,6 +124,7 @@ export async function callAI({
       model: OLLAMA_MODEL,
       messages,
       tools: openAiTools,
+      options: {num_predict: 500,num_ctx: 4096,}
     });
 
     const assistantMessage = res.message;
