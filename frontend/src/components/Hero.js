@@ -1,485 +1,551 @@
-  "use client";
+"use client";
 
 import { useRouter } from "next/navigation";
-  import { useEffect, useRef, useState } from "react";
-  import PortfolioHome from "./PortfolioHome";
-  import { useSkillStore } from "../store/skillStore";
-  import { useProjectStore } from "../store/projectStore";
-  import { useExperienceStore } from "../store/experienceStore";
-  import { useSocialStore } from "../store/socialStore";
-  import { useAboutStore } from "../store/aboutStore";
-  import { useAuthStore } from "../store/authStore";
-  import { usePortfolioStore } from "../store/portfolioStore";
+import { useEffect, useRef, useState } from "react";
 
-  export default function Hero() {
+import PortfolioHome from "./PortfolioHome";
 
-        const username = usePortfolioStore(
-  (s) => s.username
-);
+import { useAuthStore } from "../store/authStore";
+import { usePortfolioStore } from "../store/portfolioStore";
 
-    
-const terminalUser = username || "shubham";
+export default function Hero() {
+  const username = usePortfolioStore((s) => s.username);
 
-    const bootLines = [
-    "$ boot portfolio.sys",
-    "",
-    "[OK] Initializing system...",
-    "[OK] Loading projects database...",
-    "[OK] Loading skills registry...",
-    "[OK] Loading experience records...",
-    "[OK] Loading social links...",
-    "",
-    "[OK] Portfolio API connected",
-    "[OK] Visitor access granted",
-    "",
-    `Welcome to ${terminalUser}.OS v2.0`,
-    "",
-    'Type "help" for available commands.',
-    "",
-  ];
+  const terminalUser = username || "shubham";
 
-    const [history, setHistory] = useState([]);
-    const [currentLine, setCurrentLine] = useState("");
-    const [lineIndex, setLineIndex] = useState(0);
-    const [charIndex, setCharIndex] = useState(0);
-    // const [showDashboard, setShowDashboard] = useState(false);
-    const [mounted, setMounted] = useState(false);
+  const { user } = useAuthStore();
 
+  const router = useRouter();
 
+const inputRef = useRef(null);
+const bottomRef = useRef(null);
 
-    const { user } = useAuthStore();
-    const about = useAboutStore((s) => s.about);
-    const skills = useSkillStore((s) => s.skills);
-  const projects = useProjectStore((s) => s.projects);
-  const experience = useExperienceStore((s) => s.experience);
-  const socials = useSocialStore((s) => s.socials);
+  const [mounted, setMounted] = useState(false);
+  const [showPortfolio, setShowPortfolio] = useState(false);
 
-    const [showPortfolio, setShowPortfolio] = useState(false);
-    // const [showRegister, setShowRegister] = useState(false);
+  const [input, setInput] = useState("");
+ const [messages, setMessages] = useState([]);
 
-    const bootComplete = lineIndex >= bootLines.length;
-    const [command, setCommand] = useState("");
-    const router = useRouter();
+  const [loading, setLoading] = useState(false);
 
-    const inputRef = useRef(null);
-    const bottomRef = useRef(null);
+  /*
+   * ------------------------------------------------
+   * Mounted
+   * ------------------------------------------------
+   */
 
-    /* ---------------- Boot Animation ---------------- */
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-    useEffect(() => {
-      setMounted(true);
-      if (bootComplete) return;
+  /*
+   * ------------------------------------------------
+   * Auto scroll
+   * ------------------------------------------------
+   */
 
-      const timeout = setTimeout(() => {
-        const line = bootLines[lineIndex];
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [messages, loading]);
 
-        if (charIndex < line.length) {
-          setCurrentLine((prev) => prev + line[charIndex]);
-          setCharIndex((prev) => prev + 1);
-        } else {
-          setHistory((prev) => [...prev, currentLine]);
-          setCurrentLine("");
-          setCharIndex(0);
-          setLineIndex((prev) => prev + 1);
+  /*
+   * ------------------------------------------------
+   * Send message
+   * ------------------------------------------------
+   */
+
+  const sendMessage = async () => {
+    const trimmedInput = input.trim();
+
+    if (!trimmedInput || loading) return;
+
+    // Add user message immediately
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "user",
+        content: trimmedInput,
+      },
+    ]);
+
+    setInput("");
+
+    setLoading(true);
+
+    try {
+      /*
+       * Connect this to your Render AI/MCP server later.
+       *
+       * Example:
+       *
+       * POST https://your-ai-server.onrender.com/chat
+       *
+       * {
+       *   username: terminalUser,
+       *   message: trimmedInput
+       * }
+       */
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_AI_API_URL}/chat`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            username: terminalUser,
+            message: trimmedInput,
+          }),
         }
-      }, 25);
+      );
 
-      return () => clearTimeout(timeout);
-    }, [charIndex, lineIndex, currentLine, bootComplete]);
-
-    /* ---------------- Focus after boot ---------------- */
-
-    useEffect(() => {
-      if (bootComplete) {
-        setTimeout(() => {
-          inputRef.current?.focus();
-        }, 300);
+      if (!response.ok) {
+        throw new Error("Failed to communicate with AI server");
       }
-    }, [bootComplete]);
 
-    /* ---------------- Auto Scroll ---------------- */
+      const data = await response.json();
 
-    useEffect(() => {
-      bottomRef.current?.scrollIntoView({
-        behavior: "smooth",
-        block: "end",
-      });
-    }, [history]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            data.response ||
+            "I couldn't generate a response right now.",
+        },
+      ]);
+    } catch (error) {
+      console.error(error);
 
-    /* ---------------- Commands ---------------- */
-
-    const commands = {
-    help: [
-      "",
-      "Available commands:",
-      "",
-      "about        About me",
-      "skills       Technical skills",
-      "projects     View projects",
-      "experience   Work experience",
-      "socials      Social links",
-      "resume       Download resume",
-      "contact      Contact details",
-      "exit         Launch portfolio UI",
-      "clear        Clear terminal",
-      "",
-    ],
-
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "Unable to connect to the AI server. Please try again.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const executeCommand = () => {
-    const cmd = command.trim().toLowerCase();
+  /*
+   * ------------------------------------------------
+   * Keyboard handling
+   * ------------------------------------------------
+   */
 
-    if (!cmd) return;
-
-
-
-    if (cmd === "about") {
-    const output = [
-      "",
-      about?.heading || "About",
-      "=".repeat((about?.heading || "About").length),
-      "",
-      ...(about?.content
-        ? about.content.split(". ").map((line) => `${line.trim()}.`)
-        : ["No about information available."]),
-      "",
-    ];
-
-    setHistory((prev) => [
-      ...prev,
-      `${terminalUser}@portfolio:~$ about`,
-      ...output,
-    ]);
-
-    setCommand("");
-    return;
+const handleKeyDown = (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
   }
+};
 
-    if (cmd === "clear") {
-      setHistory([]);
-      setCommand("");
+  /*
+   * ------------------------------------------------
+   * Don't render before hydration
+   * ------------------------------------------------
+   */
 
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 0);
+  if (!mounted) return null;
 
-      return;
-    }
+  /*
+   * ------------------------------------------------
+   * Portfolio view
+   * ------------------------------------------------
+   */
 
-    if (cmd === "exit") {
-      setHistory((prev) => [
-        ...prev,
-        `${terminalUser}@portfolio:~$ exit`,
-        "",
-        "Launching portfolio interface...",
-        "",
-      ]);
-
-      setTimeout(() => {
-        setShowPortfolio(true);
-      }, 1500);
-
-      setCommand("");
-      return;
-    }
-
-    if (cmd === "resume") {
-      setHistory((prev) => [
-        ...prev,
-        `${terminalUser}@portfolio:~$ resume`,
-        "",
-        "Downloading resume...",
-        "",
-      ]);
-
-       const resumeUrl = terminalUser
-    ? `${process.env.NEXT_PUBLIC_API_URL}/resume/${terminalUser}/download`
-    : `${process.env.NEXT_PUBLIC_API_URL}/resume/download`;
-
-  window.open(resumeUrl, "_blank");
-
-      setCommand("");
-      return;
-    }
-
-    if (cmd === "skills") {
-    const output = [
-      "",
-      "Technical Skills",
-      "================",
-      "",
-      ...skills.flatMap((skill) => [
-        `▶ ${skill.name}`,
-        `   Category    : ${skill.category}`,
-        `   Level       : ${skill.level || "N/A"}/10`,
-        `   Description : ${skill.description}`,
-        "",
-        "------------------------------------------------",
-        "",
-      ]),
-    ];
-
-    setHistory((prev) => [
-      ...prev,
-      `${terminalUser}@portfolio:~$ skills`,
-      ...output,
-    ]);
-
-    setCommand("");
-    return;
-  }
-
-    if (cmd === "projects") {
-      const output = [
-        "",
-        "Projects",
-        "--------",
-        "",
-        ...projects.flatMap((project) => [
-          project.title,
-          `   ${project.shortDescription}`,
-          "",
-        ]),
-      ];
-
-      setHistory((prev) => [
-        ...prev,
-        `${terminalUser}@portfolio:~$ projects`,
-        ...output,
-      ]);
-
-      setCommand("");
-      return;
-    }
-
-    if (cmd === "experience") {
-      const output = [
-        "",
-        "Experience",
-        "----------",
-        "",
-        ...experience.flatMap((exp) => [
-          `${exp.role} @ ${exp.company}`,
-          exp.description || "",
-          "",
-          "------------------------------------------------"
-        ]),
-      ];
-
-      setHistory((prev) => [
-        ...prev,
-        `${terminalUser}@portfolio:~$ experience`,
-        ...output,
-      ]);
-
-      setCommand("");
-      return;
-    }
-
-  if (cmd === "socials") {
-    const output = [
-      "",
-      "Social Links",
-      "------------",
-      "",
-      ...socials.map((social) => (
-        <div key={social.id}>
-          {social.platform}:{" "}
-          <a
-            href={social.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline text-white hover:text-blue-300 cursor-pointer"
-          >
-            {social.url}
-          </a>
-        </div>
-      )),
-      "",
-    ];
-
-    setHistory((prev) => [
-      ...prev,
-      `${terminalUser}@portfolio:~$ socials`,
-      ...output,
-    ]);
-
-    setCommand("");
-    return;
-  }
-
-    if (cmd === "contact") {
-      const output = [
-        "",
-        "Get in touch",
-        "",
-        "Email: shubham.hamirwasia03@gmail.com",
-        "",
-        'Use "resume" to download CV',
-        "",
-      ];
-
-      setHistory((prev) => [
-        ...prev,
-        `${terminalUser}@portfolio:~$ contact`,
-        ...output,
-      ]);
-
-      setCommand("");
-      return;
-    }
-
-    const output = commands[cmd] || [
-      "",
-      `Command not found: ${cmd}`,
-      'Type "help" for available commands.',
-      "",
-    ];
-
-    setHistory((prev) => [
-      ...prev,
-      `${terminalUser}@portfolio:~$ ${cmd}`,
-      ...output,
-    ]);
-
-    setCommand("");
-
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
-  };
-
-  if(!mounted) return null;
+  if (showPortfolio) {
     return (
-      <>
-      {/* {showDashboard && (<DashboardPage onReturn={() => setShowDashboard(false)}/>
-)} */}
-      {showPortfolio && <PortfolioHome onReturn={() => setShowPortfolio(false)} username={username} />}
-        {/* {showRegister && (<RegisterPage onReturn={() => setShowRegister(false)}/>
-)} */}
-      {!showPortfolio && (<section className="relative min-h-screen bg-[#050505] overflow-hidden">
-        {/* GRID */}
-
-        <div
-          className="absolute inset-0 opacity-[0.05]"
-          style={{
-            backgroundImage:
-                  "linear-gradient(rgba(255,255,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.12) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
-
-        {/* SCANLINES */}
-
-        <div
-          className="absolute inset-0 pointer-events-none opacity-10"
-          style={{
-            background:
-                  "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,.03) 3px)",
-          }}
-        />
-
-        <div className="relative z-10 p-6">
-          <div className="max-w-6xl mx-auto border border-white/15 rounded-2xl overflow-hidden bg-[#0A0A0A] shadow-[0_0_80px_rgba(255,255,255,.05)]">
-            {/* HEADER */}
-
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-  <div className="flex items-center gap-2">
-    <div className="w-3 h-3 rounded-full bg-red-500" />
-    <div className="w-3 h-3 rounded-full bg-yellow-500" />
-    <div className="w-3 h-3 rounded-full bg-green-500" />
-
-    <span className="ml-4 text-white/50 text-sm font-mono">
-     { `${terminalUser}@portfolio:~$`}
-    </span>
-  </div>
-  <div className="flex items-center gap-2">
-  <button
-  onClick={() => {
-    if (user) {
-      router.push("/dashboard");
-    } else {
-      router.push("/register");
-    }
-  }}
-  className="px-4 py-2 text-sm font-medium rounded-lg
-             border border-white/20 text-white
-             hover:bg-white hover:text-black
-             transition-all duration-200 cursor-pointer"
->
-  {user ? "Dashboard" : "Create Portfolio"}
-</button>
-
-  <button
-    onClick={() => setShowPortfolio(true)}
-    className="px-4 py-2 text-sm font-medium rounded-lg
-               bg-white text-black
-               hover:bg-white/90
-               transition-all duration-200 cursor-pointer"
-  >
-    View Portfolio →
-  </button>
-
-  </div>
-</div>
-
-            {/* TERMINAL */}
-
-            <div
-              className="min-h-[85vh] p-6 font-mono text-white cursor-text"
-              onClick={() => inputRef.current?.focus()}
-            >
-              {history.map((line, index) => (
-                <div
-                  key={index}
-                  className="whitespace-pre-wrap leading-relaxed"
-                >
-                  {line}
-                </div>
-              ))}
-
-              {!bootComplete && (
-                <div>
-                  {currentLine}
-                  <span className="terminal-cursor">█</span>
-                </div>
-              )}
-
-              {bootComplete && (
-                <>
-                  <input
-                    ref={inputRef}
-                    autoFocus
-                    value={command}
-                    onChange={(e) => setCommand(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        executeCommand();
-                      }
-                    }}
-                    className="absolute opacity-0 pointer-events-none"
-                  />
-
-                  <div className="flex flex-wrap items-center mt-2">
-                    <span className="text-white font-semibold">
-    {`${terminalUser}`}@portfolio:~$&nbsp;
-  </span>
-
-                    <span>{command}</span>
-
-                    <span className="terminal-cursor ">
-                      █
-                    </span>
-                  </div>
-                </>
-              )}
-
-              <div ref={bottomRef} />
-            </div>
-          </div>
-        </div>
-      </section>)}
-      </>
+      <PortfolioHome
+        onReturn={() => setShowPortfolio(false)}
+        username={username}
+      />
     );
   }
+
+  /*
+   * ------------------------------------------------
+   * Main UI
+   * ------------------------------------------------
+   */
+
+  return (
+    <main className="min-h-screen bg-lime-100 text-gray-800 relative overflow-hidden">
+
+      {/* -------------------------------------------- */}
+      {/* Background */}
+      {/* -------------------------------------------- */}
+
+      <div
+        className="absolute inset-0 pointer-events-none opacity-30"
+        style={{
+          backgroundImage: `
+            linear-gradient(
+              rgba(132, 204, 22, 0.08) 1px,
+              transparent 1px
+            ),
+            linear-gradient(
+              90deg,
+              rgba(132, 204, 22, 0.08) 1px,
+              transparent 1px
+            )
+          `,
+          backgroundSize: "40px 40px",
+        }}
+      />
+
+      {/* -------------------------------------------- */}
+      {/* Top right buttons */}
+      {/* -------------------------------------------- */}
+
+      <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
+
+        {/* Dashboard */}
+
+        <button
+          onClick={() => {
+            if (user) {
+              router.push("/dashboard");
+            } else {
+              router.push("/register");
+            }
+          }}
+          className="
+            px-3
+            py-1.5
+            text-xs
+            font-medium
+            rounded-full
+            border
+            border-gray-700/20
+            text-gray-700/70
+            bg-lime-100/40
+            backdrop-blur-sm
+            transition-all
+            duration-300
+            hover:bg-gray-800
+            hover:text-lime-100
+            hover:border-gray-800
+            hover:-translate-y-0.5
+          "
+        >
+          {user ? "Dashboard" : "Create Portfolio"}
+        </button>
+
+        {/* Portfolio */}
+
+        <button
+          onClick={() => setShowPortfolio(true)}
+          className="
+            px-3
+            py-1.5
+            text-xs
+            font-medium
+            rounded-full
+            bg-gray-800
+            text-lime-100
+            border
+            border-gray-800
+            transition-all
+            duration-300
+            hover:bg-gray-700
+            hover:-translate-y-0.5
+            hover:shadow-md
+          "
+        >
+          Portfolio →
+        </button>
+
+      </div>
+
+      {/* -------------------------------------------- */}
+      {/* Content */}
+      {/* -------------------------------------------- */}
+
+      <div
+        className={`
+          relative
+          z-10
+          min-h-screen
+          w-full
+          flex
+          flex-col
+          mx-auto
+          max-w-4xl
+          px-5
+          sm:px-8
+          transition-all
+          duration-700
+        `}
+      >
+
+        {/* ---------------------------------------- */}
+        {/* Empty state */}
+        {/* ---------------------------------------- */}
+
+        {messages.length === 0 && (
+          <div
+            className="
+              flex-1
+              flex
+              flex-col
+              items-center
+              justify-center
+              pb-20
+            "
+          >
+
+            <h1
+              className="
+                text-4xl
+                sm:text-5xl
+                font-semibold
+                tracking-tight
+                text-gray-800
+                font-sans
+                mb-3
+              "
+            >
+              Hello, {terminalUser}
+            </h1>
+
+            <p
+              className="
+                text-sm
+                sm:text-base
+                text-gray-600/70
+                font-sans
+                mb-8
+              "
+            >
+              Ask me anything about this portfolio.
+            </p>
+
+            {/* Initial input */}
+
+            <ChatInput
+              input={input}
+              setInput={setInput}
+              sendMessage={sendMessage}
+              handleKeyDown={handleKeyDown}
+              inputRef={inputRef}
+              loading={loading}
+            />
+
+          </div>
+        )}
+
+        {/* ---------------------------------------- */}
+        {/* Chat state */}
+        {/* ---------------------------------------- */}
+
+        {messages.length > 0 && (
+          <div className="flex flex-col min-h-screen">
+
+            {/* Messages */}
+
+            <div className="flex-1 pt-24 pb-40">
+
+              <div className="space-y-8">
+
+                {messages.map((message, index) => (
+                  <div
+                    key={index}
+                    className="w-full"
+                  >
+
+                    {message.role === "user" ? (
+
+                      <div className="flex justify-end">
+
+                        <div className="max-w-[80%]">
+
+                          <div className="text-[11px] text-gray-500 mb-1.5 text-right font-mono">
+                            {terminalUser}
+                          </div>
+
+                          <div
+                            className="
+                              bg-gray-800
+                              text-lime-100
+                              px-4
+                              py-3
+                              rounded-2xl
+                              rounded-br-md
+                              text-sm
+                              leading-relaxed
+                              shadow-sm
+                            "
+                          >
+                            {message.content}
+                          </div>
+
+                        </div>
+
+                      </div>
+
+                    ) : (
+
+                      <div className="max-w-[85%]">
+
+                        <div className="text-[11px] text-gray-500 mb-1.5 font-mono">
+                          {terminalUser}.AI
+                        </div>
+
+                        <div
+                          className="
+                            text-gray-800
+                            text-sm
+                            sm:text-base
+                            leading-7
+                            whitespace-pre-wrap
+                            font-sans
+                          "
+                        >
+                          {message.content}
+                        </div>
+
+                      </div>
+
+                    )}
+
+                  </div>
+                ))}
+
+                {/* -------------------------------- */}
+                {/* Loading */}
+                {/* -------------------------------- */}
+
+                {loading && (
+                  <div className="max-w-[85%]">
+
+                    <div className="text-[11px] text-gray-500 mb-1.5 font-mono">
+                      {terminalUser}.AI
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+
+                      <span className="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce" />
+
+                      <span
+                        className="
+                          w-1.5
+                          h-1.5
+                          rounded-full
+                          bg-gray-600
+                          animate-bounce
+                        "
+                        style={{
+                          animationDelay: "150ms",
+                        }}
+                      />
+
+                      <span
+                        className="
+                          w-1.5
+                          h-1.5
+                          rounded-full
+                          bg-gray-600
+                          animate-bounce
+                        "
+                        style={{
+                          animationDelay: "300ms",
+                        }}
+                      />
+
+                    </div>
+
+                  </div>
+                )}
+
+
+              </div>
+
+            </div>
+                <div ref={bottomRef} />
+
+            {/* ------------------------------------ */}
+            {/* Bottom input */}
+            {/* ------------------------------------ */}
+
+            <div
+              className="
+                fixed
+                bottom-5
+                left-1/2
+                -translate-x-1/2
+                w-[calc(100%-2rem)]
+                max-w-3xl
+                z-30
+              "
+            >
+              <ChatInput
+                input={input}
+                setInput={setInput}
+                sendMessage={sendMessage}
+                handleKeyDown={handleKeyDown}
+                inputRef={inputRef}
+                loading={loading}
+              />
+
+              <p className="text-[10px] text-gray-500/60 text-center mt-2 font-mono">
+                Enter to send · Shift + Enter for new line
+              </p>
+            </div>
+
+          </div>
+        )}
+
+      </div>
+
+    </main>
+  );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| Chat Input
+|--------------------------------------------------------------------------
+*/
+
+function ChatInput({
+  input,
+  setInput,
+  sendMessage,
+  handleKeyDown,
+  inputRef,
+  loading,
+}) {
+  return (
+    <div className="w-full bg-lime-200/80 border border-gray-800/10 rounded-2xl shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 focus-within:ring-2 focus-within:ring-lime-500/60 focus-within:-translate-y-0.5">
+      <textarea
+        ref={inputRef}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKeyDown}
+        disabled={loading}
+        rows={1}
+        placeholder="Ask me anything..."
+        className="w-full min-h-[52px] max-h-40 resize-none bg-transparent px-5 pt-4 pb-2 text-sm text-gray-800 placeholder:text-gray-500 outline-none font-sans disabled:opacity-50"
+      />
+
+      <div className="flex justify-end px-3 pb-3">
+        <button
+          onClick={sendMessage}
+          disabled={!input.trim() || loading}
+          className="w-8 h-8 rounded-full bg-gray-800 text-lime-100 flex items-center justify-center text-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:opacity-30"
+        >
+          ↑
+        </button>
+      </div>
+    </div>
+  );
+}

@@ -7,12 +7,15 @@
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
-    "dev": "tsc --watch",
+    "dev": "nodemon src/server.js",
     "ollama": "node build/ollama-client.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.4",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "nodemon": "^3.1.14",
     "ollama": "^0.6.3",
     "process": "^0.11.10",
     "zod": "^3.23.8"

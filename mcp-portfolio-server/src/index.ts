@@ -1,15 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import {
-  getAbout,
-  getSkills,
-  getProjects,
-  searchProjects,
-  getExperience,
-  getResumeUrl,
-  getSocialLinks,
-} from "./data.js";
+
 
 const server = new McpServer({
   name: "portfolio-mcp-server2",
