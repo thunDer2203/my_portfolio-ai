@@ -9,6 +9,26 @@ import { useAuthStore } from "../store/authStore";
 import { usePortfolioStore } from "../store/portfolioStore";
 
 export default function Hero() {
+
+
+
+/*
+ * ------------------------------------------------
+ * Simple markdown formatter (bold + line breaks)
+ * ------------------------------------------------
+ */
+function formatMessage(content) {
+  // Split on **bold** segments, keeping the delimiters
+  const parts = content.split(/(\*\*[^*]+\*\*)/g);
+
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
   const username = usePortfolioStore((s) => s.username);
 
   const terminalUser = username || "shubham";
@@ -76,18 +96,6 @@ const bottomRef = useRef(null);
     setLoading(true);
 
     try {
-      /*
-       * Connect this to your Render AI/MCP server later.
-       *
-       * Example:
-       *
-       * POST https://your-ai-server.onrender.com/chat
-       *
-       * {
-       *   username: terminalUser,
-       *   message: trimmedInput
-       * }
-       */
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_AI_API_URL}/chat`,
@@ -410,7 +418,7 @@ const handleKeyDown = (e) => {
                             font-sans
                           "
                         >
-                          {message.content}
+                          {formatMessage(message.content)}
                         </div>
 
                       </div>
