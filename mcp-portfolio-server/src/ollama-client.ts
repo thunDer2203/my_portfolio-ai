@@ -79,10 +79,10 @@ export async function initializeMCP() {
     },
   }));
 
-  // console.log(
-  //   `Connected to MCP server. Discovered ${mcpTools.length} tools:`,
-  //   mcpTools.map((t) => t.name).join(", ")
-  // );
+  console.log(
+    `Connected to MCP server. Discovered ${mcpTools.length} tools:`,
+    mcpTools.map((t) => t.name).join(", ")
+  );
 }
 
 
