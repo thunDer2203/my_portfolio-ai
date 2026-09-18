@@ -9,7 +9,7 @@ const server = new McpServer({
   name: "portfolio-mcp-server2",
   version: "1.0.0",
 });
-const BASE_URL = process.env.BASE_URL || "http://localhost:5000/api";
+const BASE_URL = process.env.BASE_URL_API || "http://localhost:5000/api";
 
 
 console.error("MCP BASE_URL:", BASE_URL);
