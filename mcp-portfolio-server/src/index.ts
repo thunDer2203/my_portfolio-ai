@@ -11,6 +11,8 @@ const server = new McpServer({
 });
 const BASE_URL = process.env.BASE_URL || "http://localhost:5000/api";
 
+
+console.error("MCP BASE_URL:", BASE_URL);
 // ---- Tools ----
 // Each tool is a discrete, callable action an LLM client can invoke.
 // Keep descriptions specific — the model decides *when* to call a tool
