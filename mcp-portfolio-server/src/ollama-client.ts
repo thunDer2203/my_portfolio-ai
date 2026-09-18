@@ -12,6 +12,7 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { Ollama, Message } from "ollama";
 
 import dotenv from "dotenv";
+import { ResultSchema } from "@modelcontextprotocol/sdk/types";
 dotenv.config();
 
 const OLLAMA_API = process.env.OLLAMA_API_KEY;
@@ -78,51 +79,46 @@ export async function initializeMCP() {
     },
   }));
 
-  console.log(
-    `Connected to MCP server. Discovered ${mcpTools.length} tools:`,
-    mcpTools.map((t) => t.name).join(", ")
-  );
+  // console.log(
+  //   `Connected to MCP server. Discovered ${mcpTools.length} tools:`,
+  //   mcpTools.map((t) => t.name).join(", ")
+  // );
 }
 
+
+
+export async function getUserProfile(username: string) {
+  const result = await mcpClient.readResource({
+    uri: `portfolio://users/${username}`,
+  });
+
+  const resourceText = result.contents
+  .map((content) => {
+    if ("text" in content) {
+      return content.text;
+    }
+
+    return "";
+  })
+  .join("\n");
+
+  return resourceText;
+}
 
 // --------------------------------------------------
 // AI CALL
 // --------------------------------------------------
 
 export async function callAI({
-  message,
+  messages,
   username,
 }: {
-  message: string;
+  messages: Message[];
   username: string;
 }) {
-  const messages: Message[] = [
-    {
-      role: "system",
-      content: `
-You are a helpful, smart and knowledgable assistant answering questions about a portfolio. If asked about yourself, use your creativity to describe yourself as a close friend of the portfolio owner, who is helping the owner to present their portfolio.
-
-The portfolio username is "${username}".
-
-Use the available tools to fetch real portfolio data before answering.
-Never guess or invent portfolio information.
-
-You can interact with the user if they ask questions other than portfolio questions, but you should always answer portfolio questions using the tools.
-
-Always answer in a bullet, plain text, markdown or code format never use table structure or json.
-You can also make it in a more natural language format.
-
-      `,
-    },
-
-    {
-      role: "user",
-      content: message,
-    },
-  ];
 
   const MAX_TURNS = 5;
-
+  // console.log(`Calling Ollama with ${messages[messages.length - 1].content}`);
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const res = await ollama.chat({
       model: OLLAMA_MODEL,
@@ -139,7 +135,7 @@ You can also make it in a more natural language format.
     // ---------------------------------------------
 
     if (!assistantMessage.tool_calls?.length) {
-      console.log(`\nOllama: ${assistantMessage.content}\n`);
+      // console.log(`\nOllama: ${assistantMessage.content}\n`);
 
       return assistantMessage.content;
     }
@@ -149,11 +145,11 @@ You can also make it in a more natural language format.
     // ---------------------------------------------
 
     for (const call of assistantMessage.tool_calls) {
-      console.log(
-        `[calling tool: ${call.function.name}(${JSON.stringify(
-          call.function.arguments
-        )})]`
-      );
+      // console.log(
+      //   `[calling tool: ${call.function.name}(${JSON.stringify(
+      //     call.function.arguments
+      //   )})]`
+      // );
 
       const result = await mcpClient.callTool({
         name: call.function.name,

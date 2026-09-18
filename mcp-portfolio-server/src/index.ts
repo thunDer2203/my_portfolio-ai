@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer,ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 
@@ -109,6 +109,37 @@ server.tool(
     const links = await fetch(`${BASE_URL}/socials${username ? `/${username}` : ""}`).then((res) => res.json());
     return {
       content: [{ type: "text", text: JSON.stringify(links, null, 2) }],
+    };
+  }
+);
+
+
+
+server.resource(
+  "user-profile",
+  new ResourceTemplate(
+    "portfolio://users/{username}",
+    { list: undefined }
+  ),
+  async (uri, { username }) => {
+    const response = await fetch(
+      `http://localhost:5000/api/users/${username}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch user: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      contents: [
+        {
+          uri: uri.href,
+          mimeType: "application/json",
+          text: JSON.stringify(data.user),
+        },
+      ],
     };
   }
 );

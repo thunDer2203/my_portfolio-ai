@@ -13,6 +13,14 @@ router.get("/:username", async (req, res) => {
         mode: 'insensitive',
       },
       },
+      select: {
+    id: true,
+    username: true,
+    email: true,
+    name:true,
+    title:true,
+    // add the other fields you want
+  },
     });
 
     // console.log("FETCH portfolio:", username, user);

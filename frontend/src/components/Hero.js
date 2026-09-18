@@ -99,6 +99,7 @@ const bottomRef = useRef(null);
           body: JSON.stringify({
             username: terminalUser,
             message: trimmedInput,
+            converId: terminalUser, // Use username as conversation ID for simplicity
           }),
         }
       );
