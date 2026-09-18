@@ -1,13 +1,15 @@
 import { McpServer,ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import dotenv from "dotenv";
+dotenv.config();
 
 
 const server = new McpServer({
   name: "portfolio-mcp-server2",
   version: "1.0.0",
 });
-const BASE_URL = "http://localhost:5000/api";
+const BASE_URL = process.env.BASE_URL || "http://localhost:5000/api";
 
 // ---- Tools ----
 // Each tool is a discrete, callable action an LLM client can invoke.
@@ -123,7 +125,7 @@ server.resource(
   ),
   async (uri, { username }) => {
     const response = await fetch(
-      `http://localhost:5000/api/users/${username}`
+      `${BASE_URL}/users/${username}`
     );
 
     if (!response.ok) {
