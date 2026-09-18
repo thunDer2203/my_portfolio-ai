@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import {getSessionId} from "../utils/session";
 
 import PortfolioHome from "./PortfolioHome";
 
@@ -55,6 +56,7 @@ const bottomRef = useRef(null);
    */
 
   useEffect(() => {
+
     setMounted(true);
   }, []);
 
@@ -78,6 +80,8 @@ const bottomRef = useRef(null);
    */
 
   const sendMessage = async () => {
+
+    const sessionId = getSessionId();
     const trimmedInput = input.trim();
 
     if (!trimmedInput || loading) return;
@@ -107,7 +111,7 @@ const bottomRef = useRef(null);
           body: JSON.stringify({
             username: terminalUser==="shubham"?"creator":terminalUser,
             message: trimmedInput,
-            converId: terminalUser, // Use username as conversation ID for simplicity
+            converId: sessionId, // Use username as conversation ID for simplicity
           }),
         }
       );
