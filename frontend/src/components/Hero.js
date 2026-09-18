@@ -97,7 +97,7 @@ const bottomRef = useRef(null);
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            username: terminalUser,
+            username: terminalUser==="shubham"?"creator":terminalUser,
             message: trimmedInput,
             converId: terminalUser, // Use username as conversation ID for simplicity
           }),
