@@ -326,7 +326,7 @@ const handleKeyDown = (e) => {
                 mb-3
               "
             >
-              Hello, {terminalUser}
+              Welcome to {terminalUser}'s Portfolio
             </h1>
 
             <p
