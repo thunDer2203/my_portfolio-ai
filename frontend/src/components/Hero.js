@@ -56,7 +56,6 @@ const bottomRef = useRef(null);
    */
       const [sessionId, setSessionId] = useState(null);
   useEffect(() => {
-     if (!username) return; // wait until the store actually has a username
   setSessionId(getSessionId(username));
     setMounted(true);
   }, [username]);
