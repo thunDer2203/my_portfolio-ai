@@ -56,9 +56,9 @@ const bottomRef = useRef(null);
    */
       const [sessionId, setSessionId] = useState(null);
   useEffect(() => {
-  setSessionId(getSessionId(username));
+  setSessionId(getSessionId(terminalUser));
     setMounted(true);
-  }, [username]);
+  }, [terminalUser]);
 
   /*
    * ------------------------------------------------
