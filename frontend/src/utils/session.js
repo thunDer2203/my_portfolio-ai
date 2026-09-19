@@ -1,12 +1,11 @@
-export function getSessionId(username) {
-  if (typeof window === "undefined" || !username) return null;
+export function getSessionId() {
+  if (typeof window === "undefined") return null;
 
-  const key = `chat_session_id:${username}`;
-  let sessionId = sessionStorage.getItem(key);
+  let sessionId = localStorage.getItem("chat_session_id");
 
   if (!sessionId) {
-    sessionId = crypto.randomUUID();
-    sessionStorage.setItem(key, sessionId);
+    sessionId = crypto.randomUUID(); // built into modern browsers
+    localStorage.setItem("chat_session_id", sessionId);
   }
 
   return sessionId;
