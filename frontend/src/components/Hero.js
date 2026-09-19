@@ -54,11 +54,12 @@ const bottomRef = useRef(null);
    * Mounted
    * ------------------------------------------------
    */
-
+      const [sessionId, setSessionId] = useState(null);
   useEffect(() => {
-
+     if (!username) return; // wait until the store actually has a username
+  setSessionId(getSessionId(username));
     setMounted(true);
-  }, []);
+  }, [username]);
 
   /*
    * ------------------------------------------------
@@ -81,7 +82,7 @@ const bottomRef = useRef(null);
 
   const sendMessage = async () => {
 
-    const sessionId = getSessionId();
+
     const trimmedInput = input.trim();
 
     if (!trimmedInput || loading) return;
